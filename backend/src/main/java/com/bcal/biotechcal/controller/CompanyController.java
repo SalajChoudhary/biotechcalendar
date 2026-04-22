@@ -3,12 +3,12 @@ package com.bcal.biotechcal.controller;
 import com.bcal.biotechcal.dto.CompanyRequest;
 import com.bcal.biotechcal.dto.CompanyResponse;
 import com.bcal.biotechcal.service.CompanyService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/companies")
 public class CompanyController {
@@ -30,13 +30,13 @@ public class CompanyController {
     }
 
     @PostMapping("")
-    public ResponseEntity<CompanyResponse> createCompany(@RequestBody CompanyRequest request) {
+    public ResponseEntity<CompanyResponse> createCompany(@Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.status(201).body(companyService.createCompany(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CompanyResponse> updateCompany(@PathVariable Long id,
-                                                         @RequestBody CompanyRequest request) {
+                                                         @Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.ok(companyService.updateCompany(id, request));
     }
 

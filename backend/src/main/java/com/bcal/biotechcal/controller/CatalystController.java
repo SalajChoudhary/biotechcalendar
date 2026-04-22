@@ -4,12 +4,12 @@ import com.bcal.biotechcal.dto.CatalystRequest;
 import com.bcal.biotechcal.dto.CatalystResponse;
 import com.bcal.biotechcal.entity.Catalyst;
 import com.bcal.biotechcal.service.CatalystService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/catalysts")
 public class CatalystController {
@@ -31,13 +31,13 @@ public class CatalystController {
     }
 
     @PostMapping("")
-    public ResponseEntity<CatalystResponse> createCatalyst(@RequestBody CatalystRequest request) {
+    public ResponseEntity<CatalystResponse> createCatalyst(@Valid @RequestBody CatalystRequest request) {
         return ResponseEntity.status(201).body(catalystService.createCatalyst(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CatalystResponse> updateCatalyst(@PathVariable Long id,
-                                                           @RequestBody CatalystRequest request) {
+                                                           @Valid @RequestBody CatalystRequest request) {
         return ResponseEntity.ok(catalystService.updateCatalyst(id, request));
     }
 

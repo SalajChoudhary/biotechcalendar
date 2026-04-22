@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CatalystRequest, CatalystResponse } from '../models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CatalystService {
-  private readonly apiUrl = 'http://localhost:8080/api/catalysts';
+  private readonly apiUrl = `${environment.apiBaseUrl}/catalysts`;
+  private readonly importUrl = `${environment.apiBaseUrl}/import`;
 
   constructor(private http: HttpClient) {}
 
@@ -33,7 +35,7 @@ export class CatalystService {
 
   importFromClinicalTrials(companyId: number): Observable<{ imported: number; message: string }> {
     return this.http.post<{ imported: number; message: string }>(
-      `http://localhost:8080/api/import/clinicaltrials/${companyId}`,
+      `${this.importUrl}/clinicaltrials/${companyId}`,
       {},
     );
   }
