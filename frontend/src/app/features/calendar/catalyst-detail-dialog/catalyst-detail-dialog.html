@@ -1,0 +1,71 @@
+<h2 mat-dialog-title>{{ catalyst.companyName }} ({{ catalyst.companyTicker }})</h2>
+
+<mat-dialog-content>
+  <dl class="detail-list">
+    <dt>Drug</dt>
+    <dd>{{ catalyst.drugName }}</dd>
+
+    <dt>Type</dt>
+    <dd>
+      <mat-chip-set>
+        <mat-chip>{{ catalyst.catalystType }}</mat-chip>
+      </mat-chip-set>
+    </dd>
+
+    <dt>Expected Start</dt>
+    <dd>{{ catalyst.expectedDateStart ?? '—' }}</dd>
+
+    @if (catalyst.expectedDateEnd) {
+      <dt>Expected End</dt>
+      <dd>{{ catalyst.expectedDateEnd }}</dd>
+    }
+
+    @if (catalyst.source) {
+      <dt>Source</dt>
+      <dd>{{ catalyst.source === 'CLINICALTRIALS_GOV' ? 'ClinicalTrials.gov' : 'Manual' }}</dd>
+    }
+
+    @if (catalyst.externalId) {
+      <dt>Trial ID</dt>
+      <dd>{{ catalyst.externalId }}</dd>
+    }
+
+    @if (catalyst.notes) {
+      <dt>Notes</dt>
+      <dd class="notes">{{ catalyst.notes }}</dd>
+    }
+  </dl>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>
+
+<style>
+  .detail-list {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 10px 16px;
+    margin: 0;
+  }
+
+  dt {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+  }
+
+  dd {
+    margin: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .notes {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    align-items: flex-start;
+  }
+</style>

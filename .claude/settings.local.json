@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/Users/guild/workspace/biotechcalendar/**)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx ng *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4200)"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+<section class="catalyst-form-page">
+  <h2>Create Catalyst</h2>
+
+  @if (successMessage) {
+    <p class="success-message">{{ successMessage }}</p>
+  }
+
+  @if (errorMessage) {
+    <p class="error-message">{{ errorMessage }}</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="catalyst-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Catalyst Type</mat-label>
+      <input matInput id="catalystType" type="text" formControlName="catalystType"/>
+      @if (catalystType.touched && catalystType.invalid) {
+        <mat-error>Catalyst type is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Drug Name</mat-label>
+      <input matInput id="drugName" type="text" formControlName="drugName"/>
+      @if (drugName.touched && drugName.invalid) {
+        <mat-error>Drug name is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Company</mat-label>
+      <mat-select id="companyId" formControlName="companyId">
+        <mat-option [value]="null">Select a company</mat-option>
+        @for (company of companies; track company.id) {
+          <mat-option [value]="company.id">
+            {{ company.ticker }} - {{ company.name }}
+          </mat-option>
+        }
+      </mat-select>
+      @if (companyId.touched && companyId.invalid) {
+        <mat-error>Company is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Expected Start Date</mat-label>
+      <input matInput id="expectedDateStart" type="date" formControlName="expectedDateStart"/>
+      @if (expectedDateStart.touched && expectedDateStart.invalid) {
+        <mat-error>Start date is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Expected End Date</mat-label>
+      <input matInput id="expectedDateEnd" type="date" formControlName="expectedDateEnd"/>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notes</mat-label>
+      <textarea matInput id="notes" rows="4" formControlName="notes"></textarea>
+    </mat-form-field>
+
+    <button
+      mat-raised-button
+      color="primary"
+      type="submit"
+      [disabled]="isSubmitting || isLoadingCompanies"
+    >
+      {{ isSubmitting ? 'Saving...' : 'Create Catalyst' }}
+    </button>
+  </form>
+</section>

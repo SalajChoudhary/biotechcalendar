@@ -1,0 +1,39 @@
+<div class="calendar-container">
+  <div class="calendar-header">
+    <button mat-icon-button (click)="prevMonth()" aria-label="Previous month">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <h2 class="month-label">{{ monthLabel() }}</h2>
+    <button mat-icon-button (click)="nextMonth()" aria-label="Next month">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <button mat-stroked-button (click)="goToToday()">Today</button>
+  </div>
+
+  <div class="calendar-grid">
+    @for (day of dayHeaders; track day) {
+      <div class="day-header">{{ day }}</div>
+    }
+
+    @for (week of weeks(); track $index) {
+      @for (day of week; track day.dateStr) {
+        <div class="day-cell" [class.other-month]="!day.isCurrentMonth" [class.today]="isToday(day.date)">
+          <span class="day-number">{{ day.date.getDate() }}</span>
+          <div class="day-events">
+            @for (catalyst of day.events; track catalyst.id) {
+              <div
+                class="event-chip"
+                [style.background-color]="getEventColor(catalyst.catalystType)"
+                [matTooltip]="catalyst.companyName + ' — ' + catalyst.drugName + ' (' + catalyst.catalystType + ')'"
+                (click)="openDetail(catalyst)"
+              >
+                <span class="event-ticker">{{ catalyst.companyTicker }}</span>
+                <span class="event-drug">{{ catalyst.drugName }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

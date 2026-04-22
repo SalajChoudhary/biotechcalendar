@@ -1,0 +1,66 @@
+<section class="company-list-page">
+  <div class="page-header">
+    <div>
+      <h2>Companies</h2>
+      <p>Browse and manage tracked companies.</p>
+    </div>
+
+    <a mat-raised-button color="primary" routerLink="/companies/new">Add Company</a>
+  </div>
+
+  @if (successMessage()) {
+    <p class="success-message">{{ successMessage() }}</p>
+  }
+
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
+
+  <div class="toolbar">
+    <input
+      type="text"
+      placeholder="Search by ticker, name, or notes"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="onSearch($event)"
+    />
+  </div>
+
+  @if (isLoading()) {
+    <p>Loading companies...</p>
+  } @else if (filteredCompanies().length === 0) {
+    <div class="empty-state">
+      <p>No companies found.</p>
+      <a routerLink="/companies/new">Create the first company</a>
+    </div>
+  } @else {
+    <table mat-table [dataSource]="filteredCompanies()" class="mat-elevation-z1 company-table">
+      <ng-container matColumnDef="ticker">
+        <th mat-header-cell *matHeaderCellDef>Ticker</th>
+        <td mat-cell *matCellDef="let company">{{ company.ticker }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let company">{{ company.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="notes">
+        <th mat-header-cell *matHeaderCellDef>Notes</th>
+        <td mat-cell *matCellDef="let company">{{ company.notes || '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let company">
+          <a mat-button color="primary" [routerLink]="['/companies', company.id, 'edit']">Edit</a>
+          <button mat-button color="warn" type="button" (click)="deleteCompany(company.id)">
+            Delete
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  }
+</section>

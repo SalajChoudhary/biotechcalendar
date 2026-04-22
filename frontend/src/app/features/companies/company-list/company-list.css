@@ -1,0 +1,33 @@
+.company-list-page {
+  display: block;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.toolbar input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.75rem;
+}
+
+.company-table {
+  width: 100%;
+}
+
+.success-message {
+  color: #2e7d32;
+}
+
+.error-message {
+  color: #c62828;
+}

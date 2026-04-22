@@ -1,0 +1,21 @@
+.catalyst-form-page {
+  display: block;
+}
+
+.catalyst-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.success-message {
+  color: #2e7d32;
+}
+
+.error-message {
+  color: #c62828;
+}

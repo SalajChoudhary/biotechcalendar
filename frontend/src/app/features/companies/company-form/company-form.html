@@ -1,0 +1,38 @@
+<section class="company-form-page">
+  <h2>Create Company</h2>
+
+  @if (successMessage) {
+    <p class="success-message">{{ successMessage }}</p>
+  }
+
+  @if (errorMessage) {
+    <p class="error-message">{{ errorMessage }}</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="company-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Ticker</mat-label>
+      <input matInput id="ticker" type="text" formControlName="ticker"/>
+      @if (ticker.touched && ticker.invalid) {
+        <mat-error>Ticker is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Company Name</mat-label>
+      <input matInput id="name" type="text" formControlName="name"/>
+      @if (name.touched && name.invalid) {
+        <mat-error>Company name is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notes</mat-label>
+      <textarea matInput id="notes" rows="4" formControlName="notes"></textarea>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
+      {{ isSubmitting ? 'Saving...' : 'Create Company' }}
+    </button>
+  </form>
+</section>
