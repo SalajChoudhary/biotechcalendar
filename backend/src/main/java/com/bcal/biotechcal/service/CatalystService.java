@@ -4,14 +4,16 @@ import com.bcal.biotechcal.dto.CatalystRequest;
 import com.bcal.biotechcal.dto.CatalystResponse;
 import com.bcal.biotechcal.entity.Catalyst;
 import com.bcal.biotechcal.entity.Company;
+import com.bcal.biotechcal.exception.ResourceNotFoundException;
 import com.bcal.biotechcal.repository.CatalystRepository;
 import com.bcal.biotechcal.repository.CompanyRepository;
-import com.bcal.biotechcal.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class CatalystService {
 
     private final CatalystRepository catalystRepository;
@@ -22,6 +24,7 @@ public class CatalystService {
         this.companyRepository = companyRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<CatalystResponse> getAllCatalysts() {
         return catalystRepository.findAll()
                 .stream()
@@ -29,6 +32,7 @@ public class CatalystService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CatalystResponse getCatalystById(Long id) {
         Catalyst catalyst = catalystRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Catalyst not found with id: " + id));
@@ -41,15 +45,14 @@ public class CatalystService {
         return mapToResponse(catalystRepository.save(catalyst));
     }
 
-    public CatalystResponse updateCatalyst(Long id, CatalystRequest catalyst) {
+    public CatalystResponse updateCatalyst(Long id, CatalystRequest request) {
         Catalyst existingCatalyst = catalystRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Catalyst not found with id: " + id));
 
-        mapRequestToEntity(existingCatalyst, catalyst);
+        mapRequestToEntity(existingCatalyst, request);
 
         return mapToResponse(catalystRepository.save(existingCatalyst));
     }
-
 
     public void deleteCatalystById(Long id) {
         if (!catalystRepository.existsById(id)) {
@@ -57,7 +60,6 @@ public class CatalystService {
         }
         catalystRepository.deleteById(id);
     }
-
 
     private void mapRequestToEntity(Catalyst catalyst, CatalystRequest request) {
         catalyst.setCatalystType(request.getCatalystType());
@@ -67,8 +69,9 @@ public class CatalystService {
         catalyst.setNotes(request.getNotes());
 
         if (request.getCompanyId() != null) {
-            Company company = companyRepository.findById(request.getCompanyId()).
-                    orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + request.getCompanyId()));
+            Company company = companyRepository.findById(request.getCompanyId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Company not found with id: " + request.getCompanyId()));
             catalyst.setCompany(company);
         }
     }
@@ -91,8 +94,4 @@ public class CatalystService {
 
         return response;
     }
-
-
 }
-
-

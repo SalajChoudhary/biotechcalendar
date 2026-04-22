@@ -3,20 +3,24 @@ package com.bcal.biotechcal.service;
 import com.bcal.biotechcal.dto.CompanyRequest;
 import com.bcal.biotechcal.dto.CompanyResponse;
 import com.bcal.biotechcal.entity.Company;
-import com.bcal.biotechcal.repository.CompanyRepository;
 import com.bcal.biotechcal.exception.ResourceNotFoundException;
+import com.bcal.biotechcal.repository.CompanyRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class CompanyService {
+
     private final CompanyRepository companyRepository;
 
     public CompanyService(CompanyRepository companyRepository) {
         this.companyRepository = companyRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
         return companyRepository.findAll()
                 .stream()
@@ -24,6 +28,7 @@ public class CompanyService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CompanyResponse getCompanyById(Long id) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + id));

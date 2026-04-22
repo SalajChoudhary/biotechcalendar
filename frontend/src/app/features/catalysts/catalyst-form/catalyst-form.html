@@ -1,12 +1,16 @@
 <section class="catalyst-form-page">
-  <h2>Create Catalyst</h2>
+  <h2>{{ editingId() ? 'Edit Catalyst' : 'Create Catalyst' }}</h2>
 
-  @if (successMessage) {
-    <p class="success-message">{{ successMessage }}</p>
+  @if (successMessage()) {
+    <p class="success-message">{{ successMessage() }}</p>
   }
 
-  @if (errorMessage) {
-    <p class="error-message">{{ errorMessage }}</p>
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoadingCatalyst()) {
+    <p>Loading catalyst…</p>
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="catalyst-form">
@@ -30,7 +34,7 @@
       <mat-label>Company</mat-label>
       <mat-select id="companyId" formControlName="companyId">
         <mat-option [value]="null">Select a company</mat-option>
-        @for (company of companies; track company.id) {
+        @for (company of companies(); track company.id) {
           <mat-option [value]="company.id">
             {{ company.ticker }} - {{ company.name }}
           </mat-option>
@@ -54,6 +58,10 @@
       <input matInput id="expectedDateEnd" type="date" formControlName="expectedDateEnd"/>
     </mat-form-field>
 
+    @if (hasDateRangeError) {
+      <p class="error-message inline-error">End date must be on or after start date.</p>
+    }
+
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Notes</mat-label>
       <textarea matInput id="notes" rows="4" formControlName="notes"></textarea>
@@ -63,9 +71,15 @@
       mat-raised-button
       color="primary"
       type="submit"
-      [disabled]="isSubmitting || isLoadingCompanies"
+      [disabled]="isSubmitting() || isLoadingCompanies() || isLoadingCatalyst()"
     >
-      {{ isSubmitting ? 'Saving...' : 'Create Catalyst' }}
+      @if (isSubmitting()) {
+        <ng-container>Saving…</ng-container>
+      } @else if (editingId()) {
+        <ng-container>Update Catalyst</ng-container>
+      } @else {
+        <ng-container>Create Catalyst</ng-container>
+      }
     </button>
   </form>
 </section>

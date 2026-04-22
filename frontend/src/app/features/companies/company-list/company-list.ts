@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +8,7 @@ import { MatTableModule } from '@angular/material/table';
 
 import { CompanyResponse } from '../../../core/models/company.model';
 import { CompanyService } from '../../../core/services/company.service';
+import { extractErrorMessage } from '../../../shared/utils/http-error';
 
 @Component({
   selector: 'app-company-list',
@@ -17,6 +19,7 @@ import { CompanyService } from '../../../core/services/company.service';
 })
 export class CompanyListComponent implements OnInit {
   private readonly companyService = inject(CompanyService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly companies = signal<CompanyResponse[]>([]);
   readonly searchTerm = signal('');
@@ -48,16 +51,19 @@ export class CompanyListComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.companyService.getAll().subscribe({
-      next: (companies) => {
-        this.companies.set(companies);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Failed to load companies.');
-        this.isLoading.set(false);
-      },
-    });
+    this.companyService
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (companies) => {
+          this.companies.set(companies);
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load companies.'));
+          this.isLoading.set(false);
+        },
+      });
   }
 
   onSearch(term: string): void {
@@ -74,14 +80,17 @@ export class CompanyListComponent implements OnInit {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    this.companyService.delete(id).subscribe({
-      next: () => {
-        this.successMessage.set('Company deleted successfully.');
-        this.companies.set(this.companies().filter((item) => item.id !== id));
-      },
-      error: () => {
-        this.errorMessage.set('Failed to delete company.');
-      },
-    });
+    this.companyService
+      .delete(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Company deleted successfully.');
+          this.companies.set(this.companies().filter((item) => item.id !== id));
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to delete company.'));
+        },
+      });
   }
 }

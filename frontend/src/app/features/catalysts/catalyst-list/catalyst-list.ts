@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +12,7 @@ import { CatalystResponse } from '../../../core/models/catalyst.model';
 import { CompanyResponse } from '../../../core/models/company.model';
 import { CatalystService } from '../../../core/services/catalyst.service';
 import { CompanyService } from '../../../core/services/company.service';
+import { extractErrorMessage } from '../../../shared/utils/http-error';
 
 @Component({
   selector: 'app-catalyst-list',
@@ -30,6 +32,7 @@ import { CompanyService } from '../../../core/services/company.service';
 export class CatalystListComponent implements OnInit {
   private readonly catalystService = inject(CatalystService);
   private readonly companyService = inject(CompanyService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly catalysts = signal<CatalystResponse[]>([]);
   readonly companies = signal<CompanyResponse[]>([]);
@@ -80,23 +83,31 @@ export class CatalystListComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.catalystService.getAllCatalysts().subscribe({
-      next: (catalysts) => {
-        this.catalysts.set(catalysts);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.errorMessage.set('Failed to load catalysts.');
-        this.isLoading.set(false);
-      },
-    });
+    this.catalystService
+      .getAllCatalysts()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (catalysts) => {
+          this.catalysts.set(catalysts);
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load catalysts.'));
+          this.isLoading.set(false);
+        },
+      });
   }
 
   loadCompanies(): void {
-    this.companyService.getAll().subscribe({
-      next: (companies) => this.companies.set(companies),
-      error: () => {},
-    });
+    this.companyService
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (companies) => this.companies.set(companies),
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load companies.'));
+        },
+      });
   }
 
   onSearch(term: string): void {
@@ -111,17 +122,22 @@ export class CatalystListComponent implements OnInit {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    this.catalystService.importFromClinicalTrials(companyId).subscribe({
-      next: (result) => {
-        this.successMessage.set(result.message);
-        this.isImporting.set(false);
-        this.loadCatalysts();
-      },
-      error: () => {
-        this.errorMessage.set('Failed to import from ClinicalTrials.gov.');
-        this.isImporting.set(false);
-      },
-    });
+    this.catalystService
+      .importFromClinicalTrials(companyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.successMessage.set(result.message);
+          this.isImporting.set(false);
+          this.loadCatalysts();
+        },
+        error: (err) => {
+          this.errorMessage.set(
+            extractErrorMessage(err, 'Failed to import from ClinicalTrials.gov.'),
+          );
+          this.isImporting.set(false);
+        },
+      });
   }
 
   deleteCatalyst(id: number): void {
@@ -134,14 +150,17 @@ export class CatalystListComponent implements OnInit {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    this.catalystService.deleteCatalyst(id).subscribe({
-      next: () => {
-        this.successMessage.set('Catalyst deleted successfully.');
-        this.catalysts.set(this.catalysts().filter((item) => item.id !== id));
-      },
-      error: () => {
-        this.errorMessage.set('Failed to delete catalyst.');
-      },
-    });
+    this.catalystService
+      .deleteCatalyst(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Catalyst deleted successfully.');
+          this.catalysts.set(this.catalysts().filter((item) => item.id !== id));
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to delete catalyst.'));
+        },
+      });
   }
 }

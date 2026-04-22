@@ -1,4 +1,5 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CatalystService } from '../../../core/services/catalyst.service';
 import { CatalystResponse } from '../../../core/models/catalyst.model';
 import { CatalystDetailDialogComponent } from '../catalyst-detail-dialog/catalyst-detail-dialog';
+import { extractErrorMessage } from '../../../shared/utils/http-error';
 
 interface CalendarDay {
   date: Date;
@@ -25,11 +27,20 @@ interface CalendarDay {
 export class CalendarViewComponent implements OnInit {
   readonly dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  private readonly catalystService = inject(CatalystService);
+  private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
+
   private catalysts = signal<CatalystResponse[]>([]);
   currentDate = signal(new Date());
+  errorMessage = signal('');
 
   monthLabel = computed(() =>
     this.currentDate().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+  );
+
+  undatedEvents = computed(() =>
+    this.catalysts().filter((c) => !c.expectedDateEnd && !c.expectedDateStart),
   );
 
   weeks = computed<CalendarDay[][]>(() => {
@@ -58,7 +69,7 @@ export class CalendarViewComponent implements OnInit {
         isCurrentMonth: d.getMonth() === month,
         events: catalysts.filter((c) => {
           const displayDate = c.expectedDateEnd ?? c.expectedDateStart;
-          return displayDate === dateStr;
+          return displayDate !== null && displayDate === dateStr;
         }),
       });
 
@@ -73,15 +84,19 @@ export class CalendarViewComponent implements OnInit {
     return weeks;
   });
 
-  constructor(
-    private catalystService: CatalystService,
-    private dialog: MatDialog,
-  ) {}
-
   ngOnInit() {
-    this.catalystService.getAllCatalysts().subscribe((catalysts) => {
-      this.catalysts.set(catalysts);
-    });
+    this.catalystService
+      .getAllCatalysts()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (catalysts) => {
+          this.catalysts.set(catalysts);
+          this.errorMessage.set('');
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load catalysts.'));
+        },
+      });
   }
 
   prevMonth() {

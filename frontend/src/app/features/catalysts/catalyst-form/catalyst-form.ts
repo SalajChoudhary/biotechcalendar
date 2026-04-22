@@ -1,15 +1,24 @@
 import { CommonModule } from '@angular/common';
-import { afterNextRender, Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { afterNextRender, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { CatalystService } from '../../../core/services/catalyst.service';
 import { CompanyService } from '../../../core/services/company.service';
-
-// ... existing code ...
+import { CatalystRequest } from '../../../core/models/catalyst.model';
+import { CompanyResponse } from '../../../core/models/company.model';
+import { extractErrorMessage } from '../../../shared/utils/http-error';
 
 @Component({
   selector: 'app-catalyst-form',
@@ -29,43 +38,90 @@ export class CatalystFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly catalystService = inject(CatalystService);
   private readonly companyService = inject(CompanyService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  companies: Array<{ id: number; name: string; ticker: string }> = [];
+  readonly companies = signal<CompanyResponse[]>([]);
+  readonly editingId = signal<number | null>(null);
+  readonly isSubmitting = signal(false);
+  readonly isLoadingCompanies = signal(false);
+  readonly isLoadingCatalyst = signal(false);
+  readonly successMessage = signal('');
+  readonly errorMessage = signal('');
 
-  isSubmitting = false;
-  isLoadingCompanies = false;
-  successMessage = '';
-  errorMessage = '';
-
-  readonly form = this.fb.group({
-    catalystType: ['', Validators.required],
-    drugName: ['', Validators.required],
-    companyId: [null as number | null, Validators.required],
-    expectedDateStart: ['', Validators.required],
-    expectedDateEnd: [''],
-    notes: [''],
-  });
+  readonly form = this.fb.group(
+    {
+      catalystType: ['', Validators.required],
+      drugName: ['', Validators.required],
+      companyId: [null as number | null, Validators.required],
+      expectedDateStart: ['', Validators.required],
+      expectedDateEnd: [''],
+      notes: [''],
+    },
+    { validators: dateRangeValidator },
+  );
 
   constructor() {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    const id = idParam ? Number(idParam) : NaN;
+    if (!Number.isNaN(id) && id > 0) {
+      this.editingId.set(id);
+    }
+
     afterNextRender(() => {
-      this.loadCompanies();
+      this.loadCompanies(this.editingId());
     });
   }
 
-  loadCompanies(): void {
-    this.isLoadingCompanies = true;
-    this.errorMessage = '';
+  private loadCompanies(editingId: number | null): void {
+    this.isLoadingCompanies.set(true);
+    this.errorMessage.set('');
 
-    this.companyService.getAll().subscribe({
-      next: (companies) => {
-        this.companies = companies;
-        this.isLoadingCompanies = false;
-      },
-      error: () => {
-        this.errorMessage = 'Failed to load companies.';
-        this.isLoadingCompanies = false;
-      },
-    });
+    this.companyService
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (companies) => {
+          this.companies.set(companies);
+          this.isLoadingCompanies.set(false);
+          if (editingId !== null) {
+            this.loadCatalyst(editingId);
+          }
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load companies.'));
+          this.isLoadingCompanies.set(false);
+        },
+      });
+  }
+
+  private loadCatalyst(id: number): void {
+    this.isLoadingCatalyst.set(true);
+
+    this.catalystService
+      .getCatalystById(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (catalyst) => {
+          const match = this.companies().find(
+            (c) => c.ticker === catalyst.companyTicker && c.name === catalyst.companyName,
+          );
+          this.form.patchValue({
+            catalystType: catalyst.catalystType,
+            drugName: catalyst.drugName,
+            companyId: match?.id ?? null,
+            expectedDateStart: catalyst.expectedDateStart ?? '',
+            expectedDateEnd: catalyst.expectedDateEnd ?? '',
+            notes: catalyst.notes ?? '',
+          });
+          this.isLoadingCatalyst.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load catalyst.'));
+          this.isLoadingCatalyst.set(false);
+        },
+      });
   }
 
   submit(): void {
@@ -74,13 +130,13 @@ export class CatalystFormComponent {
       return;
     }
 
-    this.isSubmitting = true;
-    this.successMessage = '';
-    this.errorMessage = '';
+    this.isSubmitting.set(true);
+    this.successMessage.set('');
+    this.errorMessage.set('');
 
     const value = this.form.getRawValue();
 
-    const request = {
+    const request: CatalystRequest = {
       catalystType: value.catalystType ?? '',
       drugName: value.drugName ?? '',
       companyId: Number(value.companyId),
@@ -89,25 +145,37 @@ export class CatalystFormComponent {
       notes: value.notes || null,
     };
 
-    this.catalystService.createCatalyst(request).subscribe({
-      next: () => {
-        this.successMessage = 'Catalyst created successfully.';
-        this.errorMessage = '';
-        this.isSubmitting = false;
+    const id = this.editingId();
+    const request$ = id
+      ? this.catalystService.updateCatalyst(id, request)
+      : this.catalystService.createCatalyst(request);
 
-        this.form.reset({
-          catalystType: '',
-          drugName: '',
-          companyId: null,
-          expectedDateStart: '',
-          expectedDateEnd: '',
-          notes: '',
-        });
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        if (id) {
+          this.router.navigate(['/catalysts']);
+        } else {
+          this.successMessage.set('Catalyst created successfully.');
+          this.form.reset({
+            catalystType: '',
+            drugName: '',
+            companyId: null,
+            expectedDateStart: '',
+            expectedDateEnd: '',
+            notes: '',
+          });
+        }
       },
-      error: () => {
-        this.errorMessage = 'Failed to create catalyst.';
-        this.successMessage = '';
-        this.isSubmitting = false;
+      error: (err) => {
+        this.errorMessage.set(
+          extractErrorMessage(
+            err,
+            id ? 'Failed to update catalyst.' : 'Failed to create catalyst.',
+          ),
+        );
+        this.successMessage.set('');
+        this.isSubmitting.set(false);
       },
     });
   }
@@ -135,4 +203,15 @@ export class CatalystFormComponent {
   get notes() {
     return this.form.controls.notes;
   }
+
+  get hasDateRangeError(): boolean {
+    return this.form.hasError('dateRange') && this.expectedDateEnd.touched;
+  }
+}
+
+function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
+  const start = group.get('expectedDateStart')?.value;
+  const end = group.get('expectedDateEnd')?.value;
+  if (!start || !end) return null;
+  return end < start ? { dateRange: true } : null;
 }

@@ -1,12 +1,16 @@
 <section class="company-form-page">
-  <h2>Create Company</h2>
+  <h2>{{ editingId() ? 'Edit Company' : 'Create Company' }}</h2>
 
-  @if (successMessage) {
-    <p class="success-message">{{ successMessage }}</p>
+  @if (successMessage()) {
+    <p class="success-message">{{ successMessage() }}</p>
   }
 
-  @if (errorMessage) {
-    <p class="error-message">{{ errorMessage }}</p>
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoadingCompany()) {
+    <p>Loading company…</p>
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="company-form">
@@ -31,8 +35,19 @@
       <textarea matInput id="notes" rows="4" formControlName="notes"></textarea>
     </mat-form-field>
 
-    <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting">
-      {{ isSubmitting ? 'Saving...' : 'Create Company' }}
+    <button
+      mat-raised-button
+      color="primary"
+      type="submit"
+      [disabled]="isSubmitting() || isLoadingCompany()"
+    >
+      @if (isSubmitting()) {
+        <ng-container>Saving…</ng-container>
+      } @else if (editingId()) {
+        <ng-container>Update Company</ng-container>
+      } @else {
+        <ng-container>Create Company</ng-container>
+      }
     </button>
   </form>
 </section>

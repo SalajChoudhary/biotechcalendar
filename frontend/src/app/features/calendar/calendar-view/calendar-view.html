@@ -10,6 +10,10 @@
     <button mat-stroked-button (click)="goToToday()">Today</button>
   </div>
 
+  @if (errorMessage()) {
+    <p class="error-message">{{ errorMessage() }}</p>
+  }
+
   <div class="calendar-grid">
     @for (day of dayHeaders; track day) {
       <div class="day-header">{{ day }}</div>
@@ -36,4 +40,24 @@
       }
     }
   </div>
+
+  @if (undatedEvents().length > 0) {
+    <section class="undated-events">
+      <h3>Undated catalysts ({{ undatedEvents().length }})</h3>
+      <ul>
+        @for (catalyst of undatedEvents(); track catalyst.id) {
+          <li>
+            <button
+              type="button"
+              class="undated-event-chip"
+              [style.background-color]="getEventColor(catalyst.catalystType)"
+              (click)="openDetail(catalyst)"
+            >
+              {{ catalyst.companyTicker }} — {{ catalyst.drugName }} ({{ catalyst.catalystType }})
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+  }
 </div>
