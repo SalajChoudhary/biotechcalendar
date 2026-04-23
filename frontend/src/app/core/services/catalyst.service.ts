@@ -1,8 +1,14 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CatalystRequest, CatalystResponse } from '../models';
+import { CatalystRequest, CatalystResponse, Page } from '../models';
 import { environment } from '../../../environments/environment';
+
+export interface PageQuery {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -13,8 +19,21 @@ export class CatalystService {
 
   constructor(private http: HttpClient) {}
 
-  getAllCatalysts(): Observable<CatalystResponse[]> {
-    return this.http.get<CatalystResponse[]>(this.apiUrl);
+  getCatalysts(query: PageQuery = {}): Observable<Page<CatalystResponse>> {
+    let params = new HttpParams();
+    if (query.page !== undefined) params = params.set('page', query.page);
+    if (query.size !== undefined) params = params.set('size', query.size);
+    if (query.sort) params = params.set('sort', query.sort);
+    return this.http.get<Page<CatalystResponse>>(this.apiUrl, { params });
+  }
+
+  getCatalystsInRange(from: string, to: string): Observable<CatalystResponse[]> {
+    const params = new HttpParams().set('from', from).set('to', to);
+    return this.http.get<CatalystResponse[]>(`${this.apiUrl}/range`, { params });
+  }
+
+  getUndatedCatalysts(): Observable<CatalystResponse[]> {
+    return this.http.get<CatalystResponse[]>(`${this.apiUrl}/undated`);
   }
 
   getCatalystById(id: number): Observable<CatalystResponse> {

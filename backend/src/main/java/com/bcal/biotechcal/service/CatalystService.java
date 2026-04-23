@@ -7,9 +7,12 @@ import com.bcal.biotechcal.entity.Company;
 import com.bcal.biotechcal.exception.ResourceNotFoundException;
 import com.bcal.biotechcal.repository.CatalystRepository;
 import com.bcal.biotechcal.repository.CompanyRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,8 +28,21 @@ public class CatalystService {
     }
 
     @Transactional(readOnly = true)
-    public List<CatalystResponse> getAllCatalysts() {
-        return catalystRepository.findAll()
+    public Page<CatalystResponse> getCatalysts(Pageable pageable) {
+        return catalystRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CatalystResponse> getCatalystsInRange(LocalDate from, LocalDate to) {
+        return catalystRepository.findInDateRange(from, to)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CatalystResponse> getUndatedCatalysts() {
+        return catalystRepository.findUndated()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

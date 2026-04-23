@@ -23,6 +23,24 @@
   padding: 0.75rem;
 }
 
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.group-header {
+  margin: 1.25rem 0 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #444;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .import-controls {
   display: flex;
   align-items: center;

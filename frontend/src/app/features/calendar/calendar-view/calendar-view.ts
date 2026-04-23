@@ -32,30 +32,18 @@ export class CalendarViewComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   private catalysts = signal<CatalystResponse[]>([]);
+  undatedEvents = signal<CatalystResponse[]>([]);
   currentDate = signal(new Date());
   errorMessage = signal('');
+  isLoading = signal(false);
 
   monthLabel = computed(() =>
     this.currentDate().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
   );
 
-  undatedEvents = computed(() =>
-    this.catalysts().filter((c) => !c.expectedDateEnd && !c.expectedDateStart),
-  );
-
   weeks = computed<CalendarDay[][]>(() => {
-    const year = this.currentDate().getFullYear();
-    const month = this.currentDate().getMonth();
+    const { startDate, endDate, month } = this.visibleRange();
     const catalysts = this.catalysts();
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
-
-    const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
 
     const weeks: CalendarDay[][] = [];
     let week: CalendarDay[] = [];
@@ -85,16 +73,18 @@ export class CalendarViewComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.loadForCurrentMonth();
+    this.loadUndated();
+  }
+
+  private loadUndated() {
     this.catalystService
-      .getAllCatalysts()
+      .getUndatedCatalysts()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (catalysts) => {
-          this.catalysts.set(catalysts);
-          this.errorMessage.set('');
-        },
+        next: (catalysts) => this.undatedEvents.set(catalysts),
         error: (err) => {
-          this.errorMessage.set(extractErrorMessage(err, 'Failed to load catalysts.'));
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load undated catalysts.'));
         },
       });
   }
@@ -103,16 +93,19 @@ export class CalendarViewComponent implements OnInit {
     const d = new Date(this.currentDate());
     d.setMonth(d.getMonth() - 1);
     this.currentDate.set(d);
+    this.loadForCurrentMonth();
   }
 
   nextMonth() {
     const d = new Date(this.currentDate());
     d.setMonth(d.getMonth() + 1);
     this.currentDate.set(d);
+    this.loadForCurrentMonth();
   }
 
   goToToday() {
     this.currentDate.set(new Date());
+    this.loadForCurrentMonth();
   }
 
   openDetail(catalyst: CatalystResponse) {
@@ -138,6 +131,42 @@ export class CalendarViewComponent implements OnInit {
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
     );
+  }
+
+  private loadForCurrentMonth() {
+    const { startDate, endDate } = this.visibleRange();
+    const from = this.toDateStr(startDate);
+    const to = this.toDateStr(endDate);
+    this.isLoading.set(true);
+    this.catalystService
+      .getCatalystsInRange(from, to)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (catalysts) => {
+          this.catalysts.set(catalysts);
+          this.errorMessage.set('');
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(extractErrorMessage(err, 'Failed to load catalysts.'));
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  private visibleRange(): { startDate: Date; endDate: Date; month: number } {
+    const year = this.currentDate().getFullYear();
+    const month = this.currentDate().getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+
+    return { startDate, endDate, month };
   }
 
   private toDateStr(d: Date): string {

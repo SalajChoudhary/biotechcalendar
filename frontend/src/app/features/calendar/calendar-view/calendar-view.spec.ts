@@ -11,6 +11,9 @@ import { CalendarViewComponent } from './calendar-view';
 import { CatalystResponse } from '../../../core/models/catalyst.model';
 import { environment } from '../../../../environments/environment';
 
+const rangeUrl = `${environment.apiBaseUrl}/catalysts/range`;
+const undatedUrl = `${environment.apiBaseUrl}/catalysts/undated`;
+
 function makeCatalyst(overrides: Partial<CatalystResponse>): CatalystResponse {
   return {
     id: 1,
@@ -40,43 +43,56 @@ describe('CalendarViewComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('separates dated events into day cells and undated events into their own section', async () => {
+  it('fetches range and undated on init and renders both', async () => {
     const fixture = TestBed.createComponent(CalendarViewComponent);
-    fixture.componentInstance.currentDate.set(new Date('2026-04-15T12:00:00'));
+    fixture.componentInstance.currentDate.set(new Date(2026, 3, 15));
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const catalysts = [
+    const rangeReq = http.expectOne((r) => r.url === rangeUrl);
+    expect(rangeReq.request.params.get('from')).toBeTruthy();
+    expect(rangeReq.request.params.get('to')).toBeTruthy();
+    rangeReq.flush([
       makeCatalyst({ id: 1, expectedDateStart: '2026-04-22', expectedDateEnd: '2026-04-22' }),
-      makeCatalyst({ id: 2, expectedDateStart: null, expectedDateEnd: null }),
-      makeCatalyst({ id: 3, expectedDateStart: '2026-04-10', expectedDateEnd: null }),
-    ];
+    ]);
 
-    http.expectOne(`${environment.apiBaseUrl}/catalysts`).flush(catalysts);
+    const undatedReq = http.expectOne(undatedUrl);
+    undatedReq.flush([makeCatalyst({ id: 2, expectedDateStart: null, expectedDateEnd: null })]);
 
-    const cmp = fixture.componentInstance;
-    expect(cmp.undatedEvents().length).toBe(1);
-    expect(cmp.undatedEvents()[0].id).toBe(2);
-
-    const allDatedEvents = cmp
+    const allDatedEvents = fixture.componentInstance
       .weeks()
       .flat()
       .flatMap((day) => day.events);
-    const ids = allDatedEvents.map((e) => e.id);
-    expect(ids).toContain(1);
-    expect(ids).toContain(3);
-    expect(ids).not.toContain(2);
+    expect(allDatedEvents.map((e) => e.id)).toContain(1);
+    expect(fixture.componentInstance.undatedEvents()).toHaveLength(1);
+    expect(fixture.componentInstance.undatedEvents()[0].id).toBe(2);
   });
 
-  it('surfaces server error message when load fails', async () => {
+  it('refetches range but not undated when the user navigates to the next month', async () => {
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.componentInstance.currentDate.set(new Date(2026, 3, 15));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    http.expectOne((r) => r.url === rangeUrl).flush([]);
+    http.expectOne(undatedUrl).flush([]);
+
+    fixture.componentInstance.nextMonth();
+    const nextRangeReq = http.expectOne((r) => r.url === rangeUrl);
+    nextRangeReq.flush([]);
+    http.expectNone(undatedUrl);
+  });
+
+  it('surfaces server error message when range load fails', async () => {
     const fixture = TestBed.createComponent(CalendarViewComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    http.expectOne(`${environment.apiBaseUrl}/catalysts`).flush(
+    http.expectOne((r) => r.url === rangeUrl).flush(
       { message: 'database offline' },
       { status: 500, statusText: 'Server Error' },
     );
+    http.expectOne(undatedUrl).flush([]);
 
     expect(fixture.componentInstance.errorMessage()).toBe('database offline');
   });

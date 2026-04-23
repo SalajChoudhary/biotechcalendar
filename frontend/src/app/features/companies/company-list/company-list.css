@@ -24,6 +24,20 @@
   width: 100%;
 }
 
+.sort-button {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sort-button:hover {
+  color: #1565c0;
+}
+
 .success-message {
   color: #2e7d32;
 }

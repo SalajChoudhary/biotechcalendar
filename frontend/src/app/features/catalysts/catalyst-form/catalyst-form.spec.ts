@@ -36,7 +36,7 @@ async function setup(idParam: string | null) {
 }
 
 function flushCompanies(http: HttpTestingController) {
-  http.match(`${environment.apiBaseUrl}/companies`).forEach((r) =>
+  http.match(`${environment.apiBaseUrl}/companies/all`).forEach((r) =>
     r.flush([{ id: 1, ticker: 'ACME', name: 'Acme Biotech', notes: null }]),
   );
 }

@@ -5,6 +5,9 @@ import com.bcal.biotechcal.dto.CompanyResponse;
 import com.bcal.biotechcal.entity.Company;
 import com.bcal.biotechcal.exception.ResourceNotFoundException;
 import com.bcal.biotechcal.repository.CompanyRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +24,13 @@ public class CompanyService {
     }
 
     @Transactional(readOnly = true)
+    public Page<CompanyResponse> getCompanies(Pageable pageable) {
+        return companyRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
-        return companyRepository.findAll()
+        return companyRepository.findAll(Sort.by("name").ascending())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

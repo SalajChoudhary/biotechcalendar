@@ -24,6 +24,22 @@
       (ngModelChange)="onSearch($event)"
     />
 
+    <div class="view-controls">
+      <mat-button-toggle-group
+        [value]="groupMode()"
+        (change)="setGroupMode($event.value)"
+        aria-label="Group mode"
+      >
+        <mat-button-toggle value="flat">List</mat-button-toggle>
+        <mat-button-toggle value="quarter">By Quarter</mat-button-toggle>
+        <mat-button-toggle value="half">By H1/H2</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <button mat-stroked-button type="button" (click)="toggleSortDirection()">
+        Date {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+      </button>
+    </div>
+
     <div class="import-controls">
       <mat-form-field appearance="outline" class="company-select">
         <mat-label>Company</mat-label>
@@ -53,67 +69,81 @@
       <a routerLink="/catalysts/new">Create the first catalyst</a>
     </div>
   } @else {
-    <table mat-table [dataSource]="filteredCatalysts()" class="mat-elevation-z1 catalyst-table">
-      <ng-container matColumnDef="drugName">
-        <th mat-header-cell *matHeaderCellDef>Drug</th>
-        <td mat-cell *matCellDef="let catalyst">{{ catalyst.drugName }}</td>
-      </ng-container>
+    @for (group of groups(); track group.label) {
+      @if (group.label) {
+        <h3 class="group-header">{{ group.label }}</h3>
+      }
+      <table mat-table [dataSource]="group.items" class="mat-elevation-z1 catalyst-table">
+        <ng-container matColumnDef="drugName">
+          <th mat-header-cell *matHeaderCellDef>Drug</th>
+          <td mat-cell *matCellDef="let catalyst">{{ catalyst.drugName }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="catalystType">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let catalyst">{{ catalyst.catalystType }}</td>
-      </ng-container>
+        <ng-container matColumnDef="catalystType">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let catalyst">{{ catalyst.catalystType }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="company">
-        <th mat-header-cell *matHeaderCellDef>Company</th>
-        <td mat-cell *matCellDef="let catalyst">
-          {{ catalyst.companyTicker }} - {{ catalyst.companyName }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="company">
+          <th mat-header-cell *matHeaderCellDef>Company</th>
+          <td mat-cell *matCellDef="let catalyst">
+            {{ catalyst.companyTicker }} - {{ catalyst.companyName }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="expectedDateStart">
-        <th mat-header-cell *matHeaderCellDef>Start</th>
-        <td mat-cell *matCellDef="let catalyst">{{ catalyst.expectedDateStart || '-' }}</td>
-      </ng-container>
+        <ng-container matColumnDef="expectedDateStart">
+          <th mat-header-cell *matHeaderCellDef>Start</th>
+          <td mat-cell *matCellDef="let catalyst">{{ catalyst.expectedDateStart || '-' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="expectedDateEnd">
-        <th mat-header-cell *matHeaderCellDef>End</th>
-        <td mat-cell *matCellDef="let catalyst">{{ catalyst.expectedDateEnd || '-' }}</td>
-      </ng-container>
+        <ng-container matColumnDef="expectedDateEnd">
+          <th mat-header-cell *matHeaderCellDef>End</th>
+          <td mat-cell *matCellDef="let catalyst">{{ catalyst.expectedDateEnd || '-' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="source">
-        <th mat-header-cell *matHeaderCellDef>Source</th>
-        <td mat-cell *matCellDef="let catalyst">
-          @if (catalyst.source === 'CLINICALTRIALS_GOV' && catalyst.externalId) {
-            <a
-              class="source-badge source-ct"
-              [href]="'https://clinicaltrials.gov/study/' + catalyst.externalId"
-              target="_blank"
-              rel="noopener noreferrer"
-            >ClinicalTrials.gov</a>
-          } @else {
-            <span class="source-badge source-manual">Manual</span>
-          }
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="source">
+          <th mat-header-cell *matHeaderCellDef>Source</th>
+          <td mat-cell *matCellDef="let catalyst">
+            @if (catalyst.source === 'CLINICALTRIALS_GOV' && catalyst.externalId) {
+              <a
+                class="source-badge source-ct"
+                [href]="'https://clinicaltrials.gov/study/' + catalyst.externalId"
+                target="_blank"
+                rel="noopener noreferrer"
+              >ClinicalTrials.gov</a>
+            } @else {
+              <span class="source-badge source-manual">Manual</span>
+            }
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="notes">
-        <th mat-header-cell *matHeaderCellDef>Notes</th>
-        <td mat-cell *matCellDef="let catalyst">{{ catalyst.notes || '-' }}</td>
-      </ng-container>
+        <ng-container matColumnDef="notes">
+          <th mat-header-cell *matHeaderCellDef>Notes</th>
+          <td mat-cell *matCellDef="let catalyst">{{ catalyst.notes || '-' }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
-        <td mat-cell *matCellDef="let catalyst">
-          <a mat-button color="primary" [routerLink]="['/catalysts', catalyst.id, 'edit']">Edit</a>
-          <button mat-button color="warn" type="button" (click)="deleteCatalyst(catalyst.id)">
-            Delete
-          </button>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let catalyst">
+            <a mat-button color="primary" [routerLink]="['/catalysts', catalyst.id, 'edit']">Edit</a>
+            <button mat-button color="warn" type="button" (click)="deleteCatalyst(catalyst.id)">
+              Delete
+            </button>
+          </td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-    </table>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    }
+
+    <mat-paginator
+      [length]="totalElements()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="onPageChange($event)"
+      aria-label="Select catalyst page"
+    ></mat-paginator>
   }
 </section>

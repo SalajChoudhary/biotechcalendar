@@ -23,14 +23,25 @@ describe('CompanyListComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('loads companies on init', async () => {
+  it('loads paginated companies on init', async () => {
     const fixture = TestBed.createComponent(CompanyListComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const req = http.expectOne(`${environment.apiBaseUrl}/companies`);
-    req.flush([{ id: 1, ticker: 'ACME', name: 'Acme', notes: null }]);
+    const req = http.expectOne((r) => r.url === `${environment.apiBaseUrl}/companies`);
+    expect(req.request.params.get('page')).toBe('0');
+    expect(req.request.params.get('size')).toBe('25');
+    req.flush({
+      content: [{ id: 1, ticker: 'ACME', name: 'Acme', notes: null }],
+      page: 0,
+      size: 25,
+      totalElements: 1,
+      totalPages: 1,
+      first: true,
+      last: true,
+    });
 
     expect(fixture.componentInstance.companies().length).toBe(1);
+    expect(fixture.componentInstance.totalElements()).toBe(1);
   });
 });

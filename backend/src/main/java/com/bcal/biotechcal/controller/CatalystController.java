@@ -2,12 +2,17 @@ package com.bcal.biotechcal.controller;
 
 import com.bcal.biotechcal.dto.CatalystRequest;
 import com.bcal.biotechcal.dto.CatalystResponse;
-import com.bcal.biotechcal.entity.Catalyst;
+import com.bcal.biotechcal.dto.PageResponse;
 import com.bcal.biotechcal.service.CatalystService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -21,8 +26,22 @@ public class CatalystController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<CatalystResponse>> getAllCatalysts() {
-        return ResponseEntity.ok(catalystService.getAllCatalysts());
+    public ResponseEntity<PageResponse<CatalystResponse>> getCatalysts(
+            @PageableDefault(size = 25, sort = "expectedDateStart", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        return ResponseEntity.ok(PageResponse.from(catalystService.getCatalysts(pageable)));
+    }
+
+    @GetMapping("/range")
+    public ResponseEntity<List<CatalystResponse>> getCatalystsInRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(catalystService.getCatalystsInRange(from, to));
+    }
+
+    @GetMapping("/undated")
+    public ResponseEntity<List<CatalystResponse>> getUndatedCatalysts() {
+        return ResponseEntity.ok(catalystService.getUndatedCatalysts());
     }
 
     @GetMapping("/{id}")

@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CatalystService } from '../../../core/services/catalyst.service';
 import { CompanyService } from '../../../core/services/company.service';
@@ -30,6 +30,7 @@ import { extractErrorMessage } from '../../../shared/utils/http-error';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    RouterLink,
   ],
   templateUrl: './catalyst-form.html',
   styleUrl: './catalyst-form.css',

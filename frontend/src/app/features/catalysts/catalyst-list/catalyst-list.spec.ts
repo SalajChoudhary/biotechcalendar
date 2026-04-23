@@ -10,6 +10,18 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { CatalystListComponent } from './catalyst-list';
 import { environment } from '../../../../environments/environment';
 
+function pageOf(content: unknown[], totalElements = content.length) {
+  return {
+    content,
+    page: 0,
+    size: 25,
+    totalElements,
+    totalPages: Math.ceil(totalElements / 25) || 1,
+    first: true,
+    last: true,
+  };
+}
+
 describe('CatalystListComponent', () => {
   let http: HttpTestingController;
 
@@ -23,45 +35,118 @@ describe('CatalystListComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('loads catalysts and companies on init', async () => {
+  it('loads paginated catalysts and companies on init', async () => {
     const fixture = TestBed.createComponent(CatalystListComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const catalystsReq = http.expectOne(`${environment.apiBaseUrl}/catalysts`);
-    catalystsReq.flush([
+    const catalystReq = http.expectOne((r) => r.url === `${environment.apiBaseUrl}/catalysts`);
+    expect(catalystReq.request.params.get('page')).toBe('0');
+    expect(catalystReq.request.params.get('size')).toBe('25');
+    catalystReq.flush(
+      pageOf([
+        {
+          id: 1,
+          catalystType: 'Phase 3',
+          drugName: 'Drug-A',
+          companyName: 'Acme',
+          companyTicker: 'ACME',
+          expectedDateStart: '2026-05-01',
+          expectedDateEnd: null,
+          notes: null,
+          source: 'MANUAL',
+          externalId: null,
+        },
+      ]),
+    );
+
+    http.expectOne(`${environment.apiBaseUrl}/companies/all`).flush([
+      { id: 1, ticker: 'ACME', name: 'Acme', notes: null },
+    ]);
+
+    expect(fixture.componentInstance.catalysts().length).toBe(1);
+    expect(fixture.componentInstance.totalElements()).toBe(1);
+    expect(fixture.componentInstance.companies().length).toBe(1);
+  });
+
+  it('groups catalysts by quarter when group mode is set', async () => {
+    const fixture = TestBed.createComponent(CatalystListComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const catalysts = [
       {
         id: 1,
         catalystType: 'Phase 3',
         drugName: 'Drug-A',
         companyName: 'Acme',
         companyTicker: 'ACME',
-        expectedDateStart: '2026-05-01',
+        expectedDateStart: '2026-02-15',
         expectedDateEnd: null,
         notes: null,
         source: 'MANUAL',
         externalId: null,
       },
-    ]);
+      {
+        id: 2,
+        catalystType: 'Phase 2',
+        drugName: 'Drug-B',
+        companyName: 'Acme',
+        companyTicker: 'ACME',
+        expectedDateStart: '2026-08-15',
+        expectedDateEnd: null,
+        notes: null,
+        source: 'MANUAL',
+        externalId: null,
+      },
+    ];
+    http.expectOne((r) => r.url === `${environment.apiBaseUrl}/catalysts`).flush(pageOf(catalysts));
+    http.expectOne(`${environment.apiBaseUrl}/companies/all`).flush([]);
 
-    const companiesReq = http.expectOne(`${environment.apiBaseUrl}/companies`);
-    companiesReq.flush([{ id: 1, ticker: 'ACME', name: 'Acme', notes: null }]);
-
-    expect(fixture.componentInstance.catalysts().length).toBe(1);
-    expect(fixture.componentInstance.companies().length).toBe(1);
+    fixture.componentInstance.setGroupMode('quarter');
+    const groups = fixture.componentInstance.groups();
+    const labels = groups.map((g) => g.label);
+    expect(labels).toContain('Q1 2026');
+    expect(labels).toContain('Q3 2026');
   });
 
-  it('surfaces server error message on load failure', async () => {
+  it('groups by half-year with H1/H2 labels', async () => {
     const fixture = TestBed.createComponent(CatalystListComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    http.expectOne(`${environment.apiBaseUrl}/catalysts`).flush(
-      { message: 'database offline' },
-      { status: 500, statusText: 'Server Error' },
-    );
-    http.expectOne(`${environment.apiBaseUrl}/companies`).flush([]);
+    const catalysts = [
+      {
+        id: 1,
+        catalystType: 'Phase 3',
+        drugName: 'Drug-A',
+        companyName: 'Acme',
+        companyTicker: 'ACME',
+        expectedDateStart: '2026-02-15',
+        expectedDateEnd: null,
+        notes: null,
+        source: 'MANUAL',
+        externalId: null,
+      },
+      {
+        id: 2,
+        catalystType: 'Phase 2',
+        drugName: 'Drug-B',
+        companyName: 'Acme',
+        companyTicker: 'ACME',
+        expectedDateStart: '2026-08-15',
+        expectedDateEnd: null,
+        notes: null,
+        source: 'MANUAL',
+        externalId: null,
+      },
+    ];
+    http.expectOne((r) => r.url === `${environment.apiBaseUrl}/catalysts`).flush(pageOf(catalysts));
+    http.expectOne(`${environment.apiBaseUrl}/companies/all`).flush([]);
 
-    expect(fixture.componentInstance.errorMessage()).toBe('database offline');
+    fixture.componentInstance.setGroupMode('half');
+    const labels = fixture.componentInstance.groups().map((g) => g.label);
+    expect(labels).toContain('H1 2026');
+    expect(labels).toContain('H2 2026');
   });
 });

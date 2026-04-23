@@ -2,6 +2,22 @@
   display: block;
 }
 
+.back-link {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: #1565c0;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.inline-error {
+  margin: -0.25rem 0 0.75rem;
+}
+
 .catalyst-form {
   display: flex;
   flex-direction: column;

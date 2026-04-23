@@ -2,8 +2,12 @@ package com.bcal.biotechcal.controller;
 
 import com.bcal.biotechcal.dto.CompanyRequest;
 import com.bcal.biotechcal.dto.CompanyResponse;
+import com.bcal.biotechcal.dto.PageResponse;
 import com.bcal.biotechcal.service.CompanyService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +24,13 @@ public class CompanyController {
     }
 
     @GetMapping("")
+    public ResponseEntity<PageResponse<CompanyResponse>> getCompanies(
+            @PageableDefault(size = 25, sort = "name", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+        return ResponseEntity.ok(PageResponse.from(companyService.getCompanies(pageable)));
+    }
+
+    @GetMapping("/all")
     public ResponseEntity<List<CompanyResponse>> getAllCompanies() {
         return ResponseEntity.ok(companyService.getAllCompanies());
     }

@@ -1,1 +1,12 @@
-<router-outlet></router-outlet>
+<header class="app-header">
+  <a class="brand" routerLink="/calendar">{{ title() }}</a>
+  <nav class="app-nav">
+    <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
+    <a routerLink="/companies" routerLinkActive="active">Companies</a>
+    <a routerLink="/catalysts" routerLinkActive="active">Catalysts</a>
+  </nav>
+</header>
+
+<main class="app-main">
+  <router-outlet></router-outlet>
+</main>

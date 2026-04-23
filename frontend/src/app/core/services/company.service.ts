@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CompanyRequest, CompanyResponse } from '../models';
+import { CompanyRequest, CompanyResponse, Page } from '../models';
 import { environment } from '../../../environments/environment';
+import type { PageQuery } from './catalyst.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,8 +13,16 @@ export class CompanyService {
 
   constructor(private http: HttpClient) {}
 
+  getCompanies(query: PageQuery = {}): Observable<Page<CompanyResponse>> {
+    let params = new HttpParams();
+    if (query.page !== undefined) params = params.set('page', query.page);
+    if (query.size !== undefined) params = params.set('size', query.size);
+    if (query.sort) params = params.set('sort', query.sort);
+    return this.http.get<Page<CompanyResponse>>(this.apiUrl, { params });
+  }
+
   getAll(): Observable<CompanyResponse[]> {
-    return this.http.get<CompanyResponse[]>(this.apiUrl);
+    return this.http.get<CompanyResponse[]>(`${this.apiUrl}/all`);
   }
 
   getById(id: number): Observable<CompanyResponse> {

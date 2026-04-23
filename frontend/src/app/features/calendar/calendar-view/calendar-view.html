@@ -8,6 +8,9 @@
       <mat-icon>chevron_right</mat-icon>
     </button>
     <button mat-stroked-button (click)="goToToday()">Today</button>
+    @if (isLoading()) {
+      <span class="loading-indicator">Loading…</span>
+    }
   </div>
 
   @if (errorMessage()) {
